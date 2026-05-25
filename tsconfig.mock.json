@@ -1,0 +1,10 @@
+{
+  "extends": "./tsconfig.json",
+  "compilerOptions": {
+    "paths": {
+      "@/*": ["./src/*"],
+      "#app-service-factory": ["./src/infrastructure/services/appServices.mock.ts"],
+      "#app-session-provider": ["./src/app/providers/session/AppSessionProvider.mock.tsx"]
+    }
+  }
+}

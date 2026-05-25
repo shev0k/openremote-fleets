@@ -1,0 +1,92 @@
+import { Meta } from "@storybook/addon-docs/blocks";
+import { LiveTelemetryExample, VehicleStatusBadgeExample } from "../examples/FleetsDocExamples";
+
+<Meta title="Data/Teltonika Telemetry And Status" />
+
+<div className="doc-hero">
+  <h1>Teltonika and telemetry</h1>
+  <div className="doc-lead">
+    <span>Fleet data is normalized around Teltonika tracker attributes, OpenRemote asset attributes, and app-specific domain models. The UI should consume the domain models, not raw OpenRemote assets.</span>
+  </div>
+</div>
+
+## Attribute catalog
+
+The selected Teltonika map lives in `src/domain/models/teltonikaCatalog.ts`.
+
+It defines:
+
+- `TELTONIKA_DEVICE_PREFIX`
+- `TELTONIKA_FMC003_DEVICE_TYPE`
+- `TELTONIKA_PROTOCOL`
+- `TELTONIKA_CODEC`
+- `TELTONIKA_ATTRIBUTE_DEFINITIONS`
+- `TELTONIKA_TELEMETRY_SIGNAL_DEFINITIONS`
+- `OPENREMOTE_PLAYBACK_ATTRIBUTE_NAMES`
+
+Core attributes include location, altitude, direction, satellites, speed, ignition, movement, trip, GSM signal, power, battery, GNSS, odometer, fuel, engine RPM, iButton, and device metadata.
+
+## Mapping rules
+
+<div className="doc-flow" role="img" aria-label="Teltonika mapping flow">
+  <span>OpenRemote Asset attributes</span>
+  <span>openRemoteVehicleMapper</span>
+  <span>Vehicle and VehicleDetail</span>
+  <span>Live Fleet, Assets, Reports</span>
+</div>
+
+`openRemoteVehicleMapper.ts` does most of the live vehicle mapping:
+
+- extracts OpenRemote attribute values safely
+- derives tracker device type and identity
+- derives operational status from alert count, explicit connection status, location, ignition, movement, and speed
+- creates latest telemetry samples from the Teltonika signal catalog
+- creates a Teltonika snapshot for detail panels and assets
+- maps tracker assets to `AssetDevice`
+
+`openRemoteTelemetryMapper.ts` maps datapoint history into timelines. `openRemotePlaybackMapper.ts` carries nearby telemetry into route points and segments.
+
+## Playback attribute list
+
+`OPENREMOTE_PLAYBACK_ATTRIBUTE_NAMES` includes:
+
+- `gpsLocation` and fallback `location`
+- every Teltonika telemetry signal except the synthetic `alarm`
+- `activeAlertCount`
+
+That list is the contract for route history queries. If a new timeline signal should appear in playback, add the signal definition and confirm the real route history service requests it.
+
+## Status rules
+
+Vehicle status starts in the domain model, then gets UI-specific metadata:
+
+<VehicleStatusBadgeExample />
+
+- `deriveVehicleOperationalStatus` produces app-level moving/idling/parked/stationary/offline/alerting behavior.
+- `vehicleDisplayStatus.tsx` gives labels, icons, colors, and badge classes.
+- `vehicleMapMarkerStatus.ts` adds map-specific states like driver break and signal degraded.
+
+Missing GPS is not automatically offline. Offline requires explicit connection status or stronger route/history evidence.
+
+## Live telemetry display
+
+The live telemetry card uses normalized `Vehicle` and `VehicleDetail` data. It should not parse OpenRemote attributes itself.
+
+<LiveTelemetryExample />
+
+## Mock fixture rules
+
+Mock data should stay realistic enough to protect real integration work:
+
+- use attribute names from `teltonikaCatalog.ts`
+- clone fixtures before returning them
+- rebase fixed timestamps so demos stay current
+- keep tracker identity consistent between fleet, assets, details, and telemetry
+- keep mock playback routes useful for today, yesterday, and recent ranges
+- keep emulator output aligned with the same selected attribute catalog
+
+## Emulator handoff
+
+The Teltonika emulator is supported as a local real-mode validation tool. It lives in `teltonika-emulator/` and is documented in `Data / Teltonika Emulator`.
+
+Use it when you need Manager-created `TeltonikaTrackerAsset` data instead of local mock repositories. It sends Codec 8 TCP or MQTT JSON, can enable datapoint storage, and uses the same demo tracker identities as mock mode.

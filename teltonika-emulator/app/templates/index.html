@@ -1,0 +1,228 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Teltonika FMC003 Emulator</title>
+    <link rel="icon" type="image/png" href="/static/favicon.png" />
+    <link rel="stylesheet" href="/static/styles.css" />
+  </head>
+  <body>
+    <main class="shell">
+      <header class="command-header frame">
+        <div class="command-topline">
+          <div class="brand-lockup">
+            <span class="agency-mark" aria-hidden="true">OR</span>
+            <div>
+              <h1>Teltonika FMC003 Emulator</h1>
+            </div>
+            <span class="access-badge">CONTROL_INTERFACE_EMULATOR</span>
+          </div>
+          <div class="sync-stamp">LAST SYNC: <span id="last-sync">--</span></div>
+        </div>
+        <div class="command-subline">
+          <div class="operator-meta">
+            <span>MODE: <strong class="status-box idle">LOCAL WEB UI</strong></span>
+            <span>CONFIG: <strong class="status-box idle">YAML</strong></span>
+          </div>
+          <div class="system-meta">
+            <span>SYSTEM STATUS: <strong id="system-status" class="status-box idle">READY</strong></span>
+            <span>ACTIVE TRACKERS: <strong id="header-active-count" class="status-box idle">0/0</strong></span>
+          </div>
+        </div>
+      </header>
+
+      <section class="operations-bar frame" aria-label="Emulator summary">
+        <div>
+          <p class="section-kicker">Live operations</p>
+          <h2>GLOBAL TRACKER METRICS</h2>
+        </div>
+        <dl class="summary-grid">
+          <div class="metric-card">
+            <dt>TOTAL TRACKERS</dt>
+            <dd id="tracker-count">0</dd>
+            <span class="metric-note">Configured</span>
+          </div>
+          <div class="metric-card">
+            <dt>ACTIVE NODES</dt>
+            <dd id="running-count">0</dd>
+            <div class="metric-meter" aria-hidden="true"><span id="active-meter"></span></div>
+            <span id="active-ratio" class="metric-note">0% active</span>
+          </div>
+          <div class="metric-card">
+            <dt>PRIMARY TRANSPORT</dt>
+            <dd id="primary-transport">TCP CODEC 8</dd>
+            <span id="transport-detail" class="metric-note">0 TCP / 0 MQTT</span>
+          </div>
+        </dl>
+        <div class="header-actions">
+          <button id="start-all" type="button" class="action">START ALL</button>
+          <button id="stop-all" type="button" class="secondary">STOP ALL</button>
+        </div>
+      </section>
+
+      <section class="workspace frame">
+        <div class="workspace-heading">
+          <div>
+            <p class="section-kicker">Fleet devices</p>
+            <h2>CONFIGURED TRACKERS</h2>
+          </div>
+          <span class="workspace-note">MANAGER TARGET: <strong class="status-box idle">YAML CONFIG</strong></span>
+        </div>
+        <div class="table-wrap">
+          <table class="tracker-table">
+            <thead>
+              <tr>
+                <th>Name</th>
+                <th>IMEI</th>
+                <th>Transport</th>
+                <th>Scenario</th>
+                <th>Status</th>
+                <th>Last data</th>
+                <th></th>
+              </tr>
+            </thead>
+            <tbody id="tracker-table"></tbody>
+          </table>
+        </div>
+      </section>
+
+      <section class="secondary-grid">
+        <form id="tracker-form" class="form-panel frame">
+          <div class="panel-heading">
+            <p class="section-kicker">New device</p>
+            <h2>ADD TRACKER</h2>
+          </div>
+          <div class="form-stack">
+            <label>Name <input name="name" required value="Local FMC003" /></label>
+            <label>
+              IMEI
+              <input name="imei" required minlength="15" maxlength="15" value="352094085231700" />
+              <span id="imei-validation" class="field-error" hidden>IMEI already exists in this emulator session.</span>
+            </label>
+            <div class="field-row">
+              <label>Transport
+                <select name="transport">
+                  <option value="tcp">TCP Codec 8</option>
+                  <option value="mqtt">MQTT JSON</option>
+                </select>
+              </label>
+              <label>
+                <span class="label-with-info">
+                  <span>Scenario</span>
+                  <span id="scenario-hint" class="info-tooltip" tabindex="0" aria-label="Scenario information">i</span>
+                </span>
+                <select name="scenario">
+                  <option value="moving">Moving</option>
+                  <option value="parked">Parked</option>
+                  <option value="offline">Offline</option>
+                  <option value="low_battery">Low battery</option>
+                  <option value="weak_gnss">Weak GNSS</option>
+                  <option value="overspeed">Overspeed</option>
+                </select>
+              </label>
+            </div>
+            <label>
+              <span class="label-with-info">
+                <span>Route preset</span>
+                <span id="route-preset-hint" class="info-tooltip" tabindex="0" aria-label="Route preset information">i</span>
+              </span>
+              <select name="route_preset">
+                <option value="atlas_eindhoven">Atlas Eindhoven validation loop</option>
+                <option value="harbor_eindhoven">Harbor Eindhoven validation loop</option>
+                <option value="delta_eindhoven">Delta Eindhoven validation loop</option>
+                <option value="nimbus_eindhoven">Nimbus Eindhoven validation loop</option>
+                <option value="courier_eindhoven">Courier Eindhoven validation loop</option>
+                <option value="">Fixed latitude / longitude</option>
+              </select>
+            </label>
+            <div id="fixed-location-fields" class="field-row" hidden>
+              <label>Latitude <input name="latitude" type="number" step="0.000001" value="51.441642" /></label>
+              <label>Longitude <input name="longitude" type="number" step="0.000001" value="5.469722" /></label>
+            </div>
+            <div class="field-row compact">
+              <label id="manual-speed-field">Speed <input name="speed" type="number" min="0" max="240" value="28" /></label>
+              <label>Interval <input name="update_interval" type="number" min="1" step="1" value="5" /></label>
+            </div>
+            <div class="optional-attributes" data-custom-attribute-root>
+              <div class="custom-attribute-picker">
+                <span class="label-with-info">
+                  <span id="custom-attributes-title">Optional Fleets attributes</span>
+                  <span
+                    id="custom-attributes-hint"
+                    class="info-tooltip"
+                    tabindex="0"
+                    aria-label="Optional Fleets attributes information"
+                    data-tooltip="Creates custom OpenRemote text attributes on the Manager asset after the tracker has sent. These values are not sent through Codec 8 or MQTT."
+                  >i</span>
+                </span>
+                <button
+                  id="custom-attributes-trigger"
+                  class="custom-attribute-trigger"
+                  type="button"
+                  aria-haspopup="listbox"
+                  aria-expanded="false"
+                  aria-controls="custom-attributes-menu"
+                >
+                  <span data-custom-summary>None</span>
+                </button>
+              </div>
+              <div id="custom-attributes-menu" class="custom-attribute-menu" role="listbox" hidden>
+                <label class="custom-attribute-option" role="option">
+                  <input type="checkbox" name="custom_driver_name_enabled" data-custom-toggle="driver_name" />
+                  <span class="attribute-marker" aria-hidden="true"></span>
+                  <span>Driver name</span>
+                </label>
+                <label class="custom-attribute-option" role="option">
+                  <input type="checkbox" name="custom_plate_enabled" data-custom-toggle="plate" />
+                  <span class="attribute-marker" aria-hidden="true"></span>
+                  <span>Plate</span>
+                </label>
+                <label class="custom-attribute-option" role="option">
+                  <input type="checkbox" name="custom_asset_class_enabled" data-custom-toggle="asset_class" />
+                  <span class="attribute-marker" aria-hidden="true"></span>
+                  <span>Asset class</span>
+                </label>
+              </div>
+              <div id="custom-attribute-fields" class="custom-attribute-fields" hidden>
+                <label class="custom-attribute-field" data-custom-field="driver_name" hidden>
+                  Driver name
+                  <input name="custom_driver_name" disabled placeholder="Mila Janssen" />
+                </label>
+                <label class="custom-attribute-field" data-custom-field="plate" hidden>
+                  Plate
+                  <input name="custom_plate" disabled placeholder="BR-482-K" />
+                </label>
+                <label class="custom-attribute-field" data-custom-field="asset_class" hidden>
+                  Asset class
+                  <select name="custom_asset_class" disabled>
+                    <option value="truck">Truck</option>
+                    <option value="van">Van</option>
+                    <option value="car">Car</option>
+                  </select>
+                </label>
+              </div>
+            </div>
+            <button type="submit" class="full-width action">DEPLOY TRACKER</button>
+            <button id="deploy-presets" type="button" class="full-width secondary">DEPLOY ALL PRESETS</button>
+          </div>
+        </form>
+
+        <section class="log-panel frame">
+          <div class="panel-heading">
+            <p class="section-kicker">Telemetry output</p>
+            <h2>RUNTIME TELEMETRY LOG</h2>
+          </div>
+          <div class="console-surface">
+            <div class="console-toolbar">
+              <span class="console-title">Activity Log</span>
+              <span class="console-count"><strong id="event-count">0</strong> events</span>
+            </div>
+            <pre id="events" aria-live="polite"></pre>
+          </div>
+        </section>
+      </section>
+    </main>
+    <script src="/static/app.js" type="module"></script>
+  </body>
+</html>

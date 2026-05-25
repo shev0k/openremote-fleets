@@ -1,0 +1,58 @@
+import { Meta } from "@storybook/addon-docs/blocks";
+import { AlertAndAssetExample } from "../examples/FleetsDocExamples";
+
+<Meta title="Features/Alerts And Assets" />
+
+<div className="doc-hero">
+  <h1>Alerts and assets</h1>
+  <div className="doc-lead">
+    <span>Alerts and Assets are separate product pages, but both sit close to OpenRemote fleet data. Alerts normalize alarm state. Assets normalize tracker/device inventory.</span>
+  </div>
+</div>
+
+<AlertAndAssetExample />
+
+## Alerts
+
+- route: `/alerts`
+- page: `src/app/pages/Alerts.tsx`
+- global context: `src/app/contexts/AlertsContext.tsx`
+- filter model: `src/app/features/alerts/alertFilters.ts`
+- filter bar: `src/app/features/alerts/AlertFilterBar.tsx`
+
+The Alerts page has open/all/history-style views, filter controls, severity/source/state labels, and actions to acknowledge or resolve alerts.
+
+`AlertsContext` is global because Live Fleet overlays and navigation also need alert state. The page should not fetch a second independent alert universe.
+
+Real mode uses `OpenRemoteAlertsService` and `OpenRemoteAlertsRepository`. `openRemoteAlertMapper.ts` turns Manager alarms into `FleetAlert`. Updating alert state maps the app state back to OpenRemote alarm status.
+
+Mock mode uses `MockAlertsRepository`, rebases fixture timestamps, and mutates alert state in memory.
+
+## Assets
+
+- route: `/admin`
+- page: `src/app/pages/AssetsAdmin.tsx`
+- query hook: `src/app/features/assets/useAssetsQuery.ts`
+- filters: `src/app/features/assets/assetFilters.ts`
+- detail panel: `src/app/features/assets/components/AssetDetailsPanel.tsx`
+
+The Assets page is the tracker/device inventory. It shows linked vehicles, IMEI/model, GSM, battery, last sync, connection status, tracker metadata, and latest Teltonika samples.
+
+Real mode maps OpenRemote tracker assets to `AssetDevice` through `OpenRemoteAssetsRepository` and `openRemoteVehicleMapper.ts`. Mock mode uses `assetsFixtures.ts`.
+
+## Shared rules
+
+- Do not shape OpenRemote alarms or assets in React components.
+- Keep status normalization in mapper/model functions.
+- Keep missing tracker attributes visible but non-breaking in detail panels.
+- Keep alert actions idempotent enough for real-mode retries and mock in-memory updates.
+
+## Current refresh behavior
+
+`src/domain/services/liveDataRefreshPolicy.ts` currently sets:
+
+- alerts: `30_000ms`
+- assets: `5_000ms`
+- fleet vehicles: `5_000ms`
+
+Keep these intervals in mind when changing polling, loading states, or stale data messaging.

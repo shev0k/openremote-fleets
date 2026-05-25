@@ -1,0 +1,66 @@
+import { Meta } from "@storybook/addon-docs/blocks";
+
+<Meta title="Architecture/Real And Mock Data Modes" />
+
+<div className="doc-hero">
+  <h1>Real and mock mode</h1>
+  <div className="doc-lead">
+    <span>The app has one UI surface and two implementation graphs. Vite aliases decide which graph is bundled, so mock builds do not pull in the OpenRemote runtime and real builds do not pull in mock fixtures.</span>
+  </div>
+</div>
+
+## Mode selection
+
+<div className="doc-flow" role="img" aria-label="Build mode selection">
+  <span>npm script or VITE_DATA_MODE</span>
+  <span>vite.config.mjs</span>
+  <span>__OPENREMOTE_FLEETS_DATA_MODE__</span>
+  <span>#app-service-factory</span>
+  <span>#app-session-provider</span>
+  <span>real or mock app graph</span>
+</div>
+
+`vite.config.mjs` picks mode like this:
+
+- default: `openRemote`
+- `npm run dev:mock`: mock mode through `vite --mode mock`
+- `npm run build:mock`: mock mode through `vite build --mode mock`
+- `VITE_DATA_MODE=mock`: mock mode if set explicitly
+
+It also injects a build marker in `index.html`: `openremote-fleets-build-mode`.
+
+## Real mode
+
+Real mode wires:
+
+- `#app-service-factory` to `src/infrastructure/services/appServices.openRemote.ts`
+- `#app-session-provider` to `src/app/providers/session/AppSessionProvider.openRemote.tsx`
+- OpenRemote runtime from `src/infrastructure/openremote/runtime`
+- repositories and SDK-facing services from `src/infrastructure/openremote`
+
+Local real mode expects Manager at `https://localhost`. When Vite serves the app at `https://localhost:5173`, it proxies `/api`, `/auth`, and `/websocket` to Manager so browser requests stay same-origin.
+
+## Mock mode
+
+Mock mode wires:
+
+- `#app-service-factory` to `src/infrastructure/services/appServices.mock.ts`
+- `#app-session-provider` to `src/app/providers/session/AppSessionProvider.mock.tsx`
+- repositories and fixtures from `src/infrastructure/repositories/mock`
+- `MockLiveFleetSimulationService` for route-backed live movement
+
+Mock mode has no Keycloak login and should not call Manager. It is used for local demos, Storybook, and static mock deployments.
+
+## Storybook mode
+
+`.storybook/main.ts` forces the same mock aliases and data-mode constant that Vite mock mode uses. That keeps Storybook local, fixture-driven, and safe to open without OpenRemote Manager.
+
+## Bundle boundary checks
+
+`scripts/check-bundle-boundaries.mjs` scans `dist/` after a build.
+
+Mock bundles fail if they contain real markers such as `@openremote/core`, `openRemoteRuntime`, or `createOpenRemoteAppServices`.
+
+Real bundles fail if they contain mock markers such as `MockFleetRepository`, `reportsFixtures`, or `createMockAppServices`.
+
+That check is why mode-specific imports should stay behind the aliases instead of being imported directly by UI code.

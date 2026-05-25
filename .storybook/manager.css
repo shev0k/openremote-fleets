@@ -1,0 +1,23 @@
+.fleets-storybook-brand {
+  display: inline-flex;
+  min-width: 0;
+  align-items: center;
+  gap: 8px;
+  font-weight: 700;
+  line-height: 1;
+}
+
+.fleets-storybook-brand__icon {
+  width: 18px;
+  height: 18px;
+  flex: 0 0 auto;
+  border-radius: 4px;
+  object-fit: contain;
+}
+
+.fleets-storybook-brand__text {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}

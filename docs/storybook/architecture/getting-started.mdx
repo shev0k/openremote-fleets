@@ -1,0 +1,100 @@
+import { Meta } from "@storybook/addon-docs/blocks";
+
+<Meta title="Architecture/Setup And Commands" />
+
+<div className="doc-hero">
+  <h1>Getting started</h1>
+  <div className="doc-lead">
+    <span>The project is a Vite React app with two data modes. Real mode connects to OpenRemote Manager. Mock mode runs from local fixtures and is the safest way to inspect UI and Storybook without login.</span>
+  </div>
+</div>
+
+## Install
+
+```bash
+npm install
+```
+
+## Run the app
+
+```bash
+npm run dev
+```
+
+Real mode is the default. It expects OpenRemote Manager at `https://localhost`, starts Vite on `https://localhost:5173`, and proxies `/api`, `/auth`, and `/websocket` to Manager.
+
+```bash
+npm run dev:mock
+```
+
+Mock mode uses `VITE_DATA_MODE=mock`, local fixtures, no Keycloak login, and no Manager calls.
+
+## Run Storybook
+
+```bash
+npm run storybook
+```
+
+Storybook runs at `http://localhost:6006`. It forces mock aliases in `.storybook/main.ts`, so docs and examples can render without OpenRemote Manager.
+
+## Verification commands
+
+Use the smallest check that matches your change:
+
+```bash
+npm run typecheck
+npm run typecheck:mock
+npm run test
+npm run build:storybook
+npm run build:mock
+npm run verify
+```
+
+`npm run verify` is the full pass. It runs tests, real and mock type checks, real and mock builds, and bundle boundary checks.
+
+## Where to look first
+
+<table className="doc-table">
+  <thead>
+    <tr>
+      <th>Area</th>
+      <th>Files</th>
+      <th>Use it for</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>App shell</td>
+      <td><code>src/app/App.tsx</code>, <code>src/app/routes.tsx</code>, <code>src/app/appRoutes.ts</code></td>
+      <td>Provider order, route composition, navigation items.</td>
+    </tr>
+    <tr>
+      <td>Domain contracts</td>
+      <td><code>src/domain/models</code>, <code>src/domain/repositories</code>, <code>src/domain/services</code></td>
+      <td>UI-facing data shapes and repository APIs.</td>
+    </tr>
+    <tr>
+      <td>Real integration</td>
+      <td><code>src/infrastructure/openremote</code></td>
+      <td>OpenRemote runtime, raw SDK calls, repositories, and mappers.</td>
+    </tr>
+    <tr>
+      <td>Mock data</td>
+      <td><code>src/infrastructure/repositories/mock</code></td>
+      <td>Fixtures, demo routes, mock repositories, and simulation.</td>
+    </tr>
+    <tr>
+      <td>Feature UI</td>
+      <td><code>src/app/features</code>, <code>src/app/pages</code></td>
+      <td>Page logic and feature-specific components.</td>
+    </tr>
+  </tbody>
+</table>
+
+## Local rules that save time
+
+- Keep React UI behind domain contracts.
+- Do not call `manager.rest.api.*` from React components.
+- Add real-mode work in `src/infrastructure/openremote`.
+- Add mock fixtures and mock behavior in `src/infrastructure/repositories/mock`.
+- Keep `openremote-manager/` untouched.

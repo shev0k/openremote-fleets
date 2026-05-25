@@ -1,0 +1,110 @@
+import { Meta } from "@storybook/addon-docs/blocks";
+
+<Meta title="Architecture/OpenRemote Services And Repositories" />
+
+<div className="doc-hero">
+  <h1>Services and repositories</h1>
+  <div className="doc-lead">
+    <span>React talks to domain contracts. Infrastructure decides whether those contracts are backed by OpenRemote or mock data.</span>
+  </div>
+</div>
+
+## Layering
+
+<div className="doc-flow" role="img" aria-label="Application layers">
+  <span>src/app React UI</span>
+  <span>src/domain contracts</span>
+  <span>src/infrastructure repositories</span>
+  <span>OpenRemote SDK or mock fixtures</span>
+</div>
+
+The service container is `src/domain/services/appServices.ts`. It exposes:
+
+- `dataMode`
+- `fleetRepository`
+- `playbackRepository`
+- `alertsRepository`
+- `assetsRepository`
+- `reportsRepository`
+- `preferencesRepository`
+- `liveFleetStateService`
+
+`src/infrastructure/services/appServices.ts` imports `#app-service-factory`, so it gets one implementation graph at build time.
+
+## Real implementation
+
+`src/infrastructure/services/createOpenRemoteAppServices.ts` creates one shared OpenRemote runtime, raw OpenRemote services, repositories, and a passthrough live-state service.
+
+Raw SDK-facing services live in `src/infrastructure/openremote/services`:
+
+- `OpenRemoteFleetAssetService` queries recursive `TeltonikaTrackerAsset` assets and caches list calls briefly.
+- `OpenRemoteRouteHistoryService` fetches datapoint history and falls back from `location` to `gpsLocation` where needed.
+- `OpenRemoteVehicleTelemetryService` wraps asset lookup and telemetry history access.
+- `OpenRemoteAlertsService` reads and updates alarms.
+- `OpenRemotePreferencesService` reads Manager app configuration.
+- `OpenRemoteReportsService` gathers current fleet assets for report inputs.
+
+App-facing repositories live in `src/infrastructure/openremote/repositories`.
+
+## Safe fallbacks
+
+`OpenRemoteRepositoryBase` is the guardrail for unfinished or unavailable backend slices.
+
+<div className="doc-flow" role="img" aria-label="OpenRemote fallback flow">
+  <span>repository method</span>
+  <span>ensureReady(false)</span>
+  <span>service call</span>
+  <span>mapper</span>
+  <span>domain model or safe fallback</span>
+</div>
+
+If the runtime is not ready or a call fails, repositories return safe fallback values and record adapter status through `openRemoteAdapterStatus.ts`. This keeps the shell usable while real integrations are still being completed.
+
+## Mock implementation
+
+`src/infrastructure/services/createMockAppServices.ts` creates mock repositories plus `MockLiveFleetSimulationService`.
+
+The fixture set includes:
+
+- `fleetFixtures.ts` for demo vehicles
+- `vehicleDetailsFixtures.ts` for detail panels
+- `playbackFixtures.ts` for route playback
+- `teltonikaTelemetryFixtures.ts` for FMC003-like signal snapshots
+- `alertsFixtures.ts` for alert workflows
+- `assetsFixtures.ts` for tracker inventory
+- `reportsFixtures.ts` for report builder data
+
+Mock repositories clone fixtures before returning them, rebase fixed dates to the current date, and keep mutable state in memory where the UI expects updates.
+
+## Domain models worth knowing
+
+<table className="doc-table">
+  <thead>
+    <tr>
+      <th>Model</th>
+      <th>Purpose</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td><code>vehicle.ts</code></td>
+      <td>Map/list vehicle shape, location flags, telemetry quality, Teltonika snapshot.</td>
+    </tr>
+    <tr>
+      <td><code>playback.ts</code></td>
+      <td>Route points, trip segments, segment state, markers, graph series.</td>
+    </tr>
+    <tr>
+      <td><code>telemetry.ts</code></td>
+      <td>Signal definitions, samples, and timelines.</td>
+    </tr>
+    <tr>
+      <td><code>alerts.ts</code>, <code>assets.ts</code>, <code>reports.ts</code></td>
+      <td>Feature-facing models for active product areas.</td>
+    </tr>
+    <tr>
+      <td><code>preferences.ts</code></td>
+      <td>Branding, theme, map colors, time format, source label, and CSS variable generation.</td>
+    </tr>
+  </tbody>
+</table>

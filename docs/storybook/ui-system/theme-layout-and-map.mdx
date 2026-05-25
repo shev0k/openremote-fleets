@@ -1,0 +1,90 @@
+import { Meta } from "@storybook/addon-docs/blocks";
+import { AppSurfaceExample, ThemeTokenExample, VehicleStatusBadgeExample } from "../examples/FleetsDocExamples";
+
+<Meta title="UI System/Themes Layout And Map" />
+
+<div className="doc-hero">
+  <h1>Theme, layout, and map UI</h1>
+  <div className="doc-lead">
+    <span>Fleets uses semantic CSS variables, Tailwind utilities, shared app components, and shared map/playback components. Prefer those before adding one-off styling.</span>
+  </div>
+</div>
+
+## Theme tokens
+
+The style entry is `src/styles/index.css`. It imports Tailwind setup, theme tokens, shared classes, and fonts.
+
+The main token file is `src/styles/theme.css`. It defines semantic variables for:
+
+- page and panel surfaces
+- content colors
+- borders and shadows
+- brand and feedback colors
+- controls
+- fleet glass/acrylic surfaces
+- map colors
+- timeline colors
+- vehicle status colors
+- shadcn-compatible tokens
+
+`@theme inline` exposes these variables to Tailwind utilities such as `bg-panel`, `text-content-primary`, `border-border-subtle`, `bg-brand`, and `bg-map-surface`.
+
+<ThemeTokenExample />
+
+## Display modes
+
+The app supports three visual layers:
+
+- light/dark through `next-themes`
+- `ui-acrylic` and `ui-solid` for global surface behavior
+- `live-fleet-acrylic` for stronger map/playback glass treatment
+
+Preferences can override brand, status, map, route, and time-format settings at runtime.
+
+## Shared components
+
+Use shared components before creating feature-local copies:
+
+<AppSurfaceExample />
+
+Common building blocks:
+
+- `PanelCard`
+- `MetricTileCard`
+- `SegmentedControl`
+- `SelectionDropdown`
+- `ToolbarSearchField`
+- `PageHeaderPanel`
+- `FilterBar`
+- `DialogFrame`
+- `DatePickerPopover`
+- `useDraggableFloatingPanel`
+- `useAnchoredPopoverPosition`
+- `safeStorage`
+
+Keep these generic and app-specific. If a component only makes sense for one feature, leave it in that feature folder.
+
+## Map system
+
+Shared map code lives in `src/app/components/map`.
+
+Important files:
+
+- `CustomMap.tsx`: Leaflet facade for vehicles, selected vehicle, route lines, playback route, active segment, map type, loading state, fit padding, and imperative zoom/reset/refresh methods.
+- `mapTileConfig.ts`: default/satellite/terrain tile config, default Eindhoven center, and stable Leaflet options.
+- `useCustomMapLayers.ts`: tile layer, vehicle markers, simple routes, and active segment polyline.
+- `useCustomMapFocus.ts` and `mapFocus.ts`: initial fit, route fit keys, selected vehicle focus, bottom overlay padding, and travel animation.
+- `vehicleMarkerHtml.ts`: marker and tooltip HTML.
+- `routeSegments`: segmented route rendering, stop/alarm markers, and route styles.
+
+Shared map helpers belong here when Live Fleet, Route Playback, and Wall Display can all use them.
+
+## Vehicle status colors
+
+<VehicleStatusBadgeExample />
+
+Vehicle status classes resolve through semantic CSS variables. Do not hard-code new status hex colors in feature components.
+
+## Storybook guidance
+
+Storybook uses the same `src/styles/index.css` entry and mock mode aliases. Add examples when they explain a real feature or state. Avoid a standalone component showroom unless a component is truly shared enough to need API-level documentation.

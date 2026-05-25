@@ -1,0 +1,66 @@
+import { Meta } from "@storybook/addon-docs/blocks";
+
+<Meta title="Architecture/App Shell" />
+
+<div className="doc-hero">
+  <h1>App shell</h1>
+  <div className="doc-lead">
+    <span>The shell is small on purpose. Providers are mounted once, routes are lazy-loaded, and feature pages stay responsible for their own state.</span>
+  </div>
+</div>
+
+## Provider stack
+
+`src/app/App.tsx` mounts the app in this order:
+
+<div className="doc-flow" role="img" aria-label="Provider order">
+  <span>AppThemeProvider</span>
+  <span>AppSessionProvider</span>
+  <span>AppServicesProvider</span>
+  <span>AppPreferencesProvider</span>
+  <span>AlertsProvider</span>
+  <span>RouterProvider</span>
+</div>
+
+Why the order matters:
+
+- Theme comes first so every page can render with light, dark, acrylic, or solid surfaces.
+- Session comes before services because real mode needs the OpenRemote runtime.
+- Services come before preferences, alerts, and feature pages because they expose repositories.
+- Alerts are global because the layout, alerts page, and live fleet overlays all use alert state.
+- `DesktopOnlyOverlay` sits beside the router and warns when the viewport is too small for this desktop-first UI.
+
+## Route composition
+
+`src/app/appRoutes.ts` is the route catalog. `src/app/routes.tsx` turns that catalog into React Router routes.
+
+The app has two placements:
+
+- `layout`: uses `src/app/components/Layout.tsx` with navigation, profile, notifications, theme toggle, and route outlet.
+- `standalone`: bypasses the layout. This is used by `/wall-display`.
+
+Navigation is also derived from `appRoutes`. If a route has `showInNavigation: false`, it can still exist but will not appear in the main nav.
+
+## Layout behavior
+
+`Layout` owns the app-wide frame:
+
+- brand and active route display
+- desktop navigation and compact navigation behavior
+- alert notification entry point
+- profile popover and logout hook
+- theme and acrylic/solid toggles
+- content outlet for feature pages
+
+Feature pages should not duplicate this shell. They should render their page surface inside the outlet.
+
+## Page loading style
+
+Pages are lazy-loaded from `src/app/pages`. Most pages are thin entry points that delegate real work to feature folders:
+
+- `LiveFleet.tsx` mounts `LiveFleetWorkspaceProvider` and `LiveFleetPageShell`.
+- `RoutePlayback.tsx` uses `useRoutePlaybackWorkspace`.
+- `Reports.tsx` uses `useReportBuilderController`.
+- `AssetsAdmin.tsx`, `Alerts.tsx`, `Graphs.tsx`, `Preferences.tsx`, and `WallDisplay.tsx` keep page-specific orchestration close to the route.
+
+This keeps routing stable while feature internals can change.

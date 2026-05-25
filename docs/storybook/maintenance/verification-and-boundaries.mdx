@@ -1,0 +1,96 @@
+import { Meta } from "@storybook/addon-docs/blocks";
+import { MaintenanceChecksExample } from "../examples/FleetsDocExamples";
+
+<Meta title="Maintenance/Verification Tests And Boundaries" />
+
+<div className="doc-hero">
+  <h1>Verification and boundaries</h1>
+  <div className="doc-lead">
+    <span>The repo has clear checks for TypeScript, tests, Storybook, and real/mock bundle separation. Use the smallest useful set while working, then run the broader checks before handoff.</span>
+  </div>
+</div>
+
+<MaintenanceChecksExample />
+
+## Common checks
+
+```bash
+npm run typecheck
+npm run typecheck:mock
+npm run test
+npm run build:storybook
+```
+
+Run `typecheck` for TypeScript changes. Run `typecheck:mock` when mode aliases, mock services, or mock-only imports are touched. Run `test` for business logic, hooks, mapping, and component behavior. Run `build:storybook` after Storybook docs or examples change.
+
+## Build checks
+
+```bash
+npm run build
+npm run check:bundle:real
+npm run build:mock
+npm run check:bundle:mock
+```
+
+Use these when changing Vite config, app startup, routing, data-mode selection, service composition, OpenRemote imports, mock imports, or static deployment behavior.
+
+## Full check
+
+```bash
+npm run verify
+```
+
+`verify` runs:
+
+1. `npm run test`
+2. `npm run typecheck`
+3. `npm run typecheck:mock`
+4. `npm run build`
+5. `npm run check:bundle:real`
+6. `npm run build:mock`
+7. `npm run check:bundle:mock`
+
+It does not run Storybook, so run `npm run build:storybook` separately after Storybook changes.
+
+## Bundle boundary rules
+
+<div className="doc-flow" role="img" aria-label="Bundle boundary checks">
+  <span>real build</span>
+  <span>scan dist</span>
+  <span>reject mock markers</span>
+  <span>mock build</span>
+  <span>scan dist</span>
+  <span>reject OpenRemote markers</span>
+</div>
+
+Keep mode-specific code behind these aliases:
+
+- `#app-service-factory`
+- `#app-session-provider`
+
+Do not import real OpenRemote runtime files from React UI, mock repositories, Storybook examples, or shared components. Do not import mock fixtures from real OpenRemote services or repositories.
+
+## OpenRemote Manager boundary
+
+`openremote-manager/` is reference-only. Do not edit, reformat, stage, or generate files inside it.
+
+Use this command before finishing if you touched docs, Storybook, or app files:
+
+```bash
+git diff --name-only -- openremote-manager
+```
+
+The command should print nothing.
+
+## Good test targets
+
+- mappers in `src/infrastructure/openremote/repositories`
+- mock repositories and fixture rebasing
+- status rules in `src/domain/models` and `src/app/components/map`
+- feature hooks under `src/app/features`
+- storage and layout helpers
+- report validation and export services
+- graph layout and widget registry
+- timeline/playback state transitions
+
+If a command cannot run locally, record what failed and the risk. Do not silently skip checks.

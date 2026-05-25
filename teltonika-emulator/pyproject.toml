@@ -1,0 +1,38 @@
+[build-system]
+requires = ["setuptools>=69", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "openremote-teltonika-emulator"
+version = "0.1.0"
+description = "Local Teltonika FMC003 emulator for OpenRemote Fleets integration testing"
+requires-python = ">=3.11"
+dependencies = [
+  "fastapi>=0.111,<1",
+  "jinja2>=3.1,<4",
+  "paho-mqtt>=2.1,<3",
+  "pydantic>=2.7,<3",
+  "pyyaml>=6.0,<7",
+  "uvicorn[standard]>=0.30,<1",
+]
+
+[project.optional-dependencies]
+dev = [
+  "httpx>=0.27,<1",
+  "pytest>=8.2,<9",
+  "pytest-asyncio>=0.23,<1",
+]
+
+[project.scripts]
+teltonika-emulator = "teltonika_emulator.__main__:main"
+
+[tool.setuptools.packages.find]
+where = ["."]
+include = ["app*", "teltonika_emulator*"]
+
+[tool.setuptools.package-data]
+app = ["templates/*.html", "static/*.css", "static/*.js", "static/*.png"]
+
+[tool.pytest.ini_options]
+asyncio_mode = "auto"
+testpaths = ["tests"]

@@ -1,0 +1,220 @@
+import type {
+  FleetReportSnapshot,
+  ReportDefinition,
+  ReportParameterDefinition,
+  ReportPreviewRow,
+} from "../../domain/models/reports";
+import { TELTONIKA_TELEMETRY_SIGNAL_DEFINITIONS } from "../../domain/models/teltonikaCatalog";
+
+export const TEST_REPORT_SNAPSHOTS: Record<string, FleetReportSnapshot> = {
+  today: {
+    metrics: {
+      maxSpeedKph: 88,
+      maxSpeedDeltaPercent: 6,
+      averageTripDurationLabel: "41 min",
+      overspeedEvents: 4,
+      overspeedDeltaPercent: -11,
+      totalDistanceKm: 196,
+    },
+    dailyTrips: [
+      { dayLabel: "08:00", trips: 4, distanceKm: 28 },
+      { dayLabel: "10:00", trips: 6, distanceKm: 44 },
+    ],
+    dailySpeed: [
+      { dayLabel: "08:00", averageSpeedKph: 39, maxSpeedKph: 65 },
+      { dayLabel: "10:00", averageSpeedKph: 46, maxSpeedKph: 77 },
+    ],
+    speedDistribution: [
+      { bucketLabel: "0-20", percentage: 12 },
+      { bucketLabel: "81+", percentage: 6 },
+    ],
+    mostActiveVehicles: [
+      { vehicleId: "Courier 19", distanceLabel: "78 km", tripCount: 6, score: 94 },
+      { vehicleId: "Atlas 12", distanceLabel: "63 km", tripCount: 5, score: 88 },
+    ],
+  },
+  "last-7-days": {
+    metrics: {
+      maxSpeedKph: 92,
+      maxSpeedDeltaPercent: 4,
+      averageTripDurationLabel: "47 min",
+      overspeedEvents: 21,
+      overspeedDeltaPercent: -7,
+      totalDistanceKm: 1428,
+    },
+    dailyTrips: [
+      { dayLabel: "Mon", trips: 19, distanceKm: 188 },
+      { dayLabel: "Tue", trips: 21, distanceKm: 214 },
+    ],
+    dailySpeed: [
+      { dayLabel: "Mon", averageSpeedKph: 41, maxSpeedKph: 79 },
+      { dayLabel: "Tue", averageSpeedKph: 46, maxSpeedKph: 86 },
+    ],
+    speedDistribution: [
+      { bucketLabel: "0-20", percentage: 10 },
+      { bucketLabel: "81+", percentage: 6 },
+    ],
+    mostActiveVehicles: [
+      { vehicleId: "Atlas 12", distanceLabel: "412 km", tripCount: 28, score: 96 },
+      { vehicleId: "Courier 19", distanceLabel: "396 km", tripCount: 26, score: 93 },
+      { vehicleId: "Delta 24", distanceLabel: "311 km", tripCount: 19, score: 79 },
+    ],
+  },
+};
+
+export const TEST_REPORT_PARAMETERS: ReportParameterDefinition[] = TELTONIKA_TELEMETRY_SIGNAL_DEFINITIONS
+  .filter((signal) =>
+    [
+      "speed",
+      "ignition",
+      "movement",
+      "fuelLevel",
+      "fuelUsedGps",
+      "fuelRateGps",
+      "batteryLevel",
+      "batteryVoltage",
+      "externalVoltage",
+      "engineRpm",
+      "gnssStatus",
+      "gnssHdop",
+      "gsmSignal",
+      "totalOdometer",
+      "tripOdometer",
+      "iButton",
+      "alarm",
+    ].includes(signal.id),
+  )
+  .map((signal) => ({
+    ...signal,
+    reportCategoryIds: signal.id === "alarm"
+      ? ["alarms", "safety"]
+      : signal.id === "iButton"
+        ? ["driver"]
+        : signal.id.includes("fuel")
+          ? ["fuel", "operations"]
+          : ["operations"],
+  }));
+
+export const TEST_REPORT_DEFINITIONS: ReportDefinition[] = [
+  {
+    id: "daily-summary",
+    name: "Fleet Daily Summary",
+    category: "operations",
+    description: "Daily mileage, trips, alarms, and selected Teltonika telemetry.",
+    supportedOutputModes: ["preview", "print", "export", "email", "schedule"],
+    supportedExportFormats: ["pdf", "xlsx", "csv", "json"],
+    defaultOutputMode: "preview",
+    parameterIds: ["speed", "ignition", "movement", "fuelLevel", "totalOdometer", "tripOdometer", "alarm"],
+    defaultParameterIds: ["speed", "ignition", "movement", "totalOdometer", "alarm"],
+    requiredCapabilities: ["speed", "movement", "ignition"],
+    optionalCapabilities: ["fuelLevel", "odometer", "alarms", "gnssHdop", "gsmSignal"],
+    groupingOptions: ["vehicle", "day"],
+    defaultGrouping: "vehicle",
+    aggregationOptions: ["sum", "average", "count"],
+    defaultAggregation: "sum",
+    availableColumns: ["vehicle", "time", "speed", "ignition", "movement", "totalOdometer", "tripOdometer", "alarm"],
+    defaultColumnIds: ["vehicle", "time", "speed", "movement", "tripOdometer", "alarm"],
+    availableCharts: ["distance-by-day", "activity-by-vehicle", "alarm-severity"],
+    defaultChartIds: ["distance-by-day", "activity-by-vehicle"],
+    previewSections: ["summary", "charts", "table"],
+    vehicleSelection: { mode: "all" },
+    period: { type: "preset", preset: "today" },
+    timeWindow: { preset: "fullDay" },
+    schedule: { enabled: false },
+  },
+  {
+    id: "trip-activity",
+    name: "Vehicle Trips",
+    category: "trips",
+    description: "Movement, ignition, speed, and odometer context for route activity.",
+    supportedOutputModes: ["preview", "print", "export", "schedule"],
+    supportedExportFormats: ["pdf", "xlsx", "csv", "json"],
+    defaultOutputMode: "preview",
+    parameterIds: ["movement", "ignition", "speed", "tripOdometer", "totalOdometer"],
+    defaultParameterIds: ["movement", "ignition", "speed", "tripOdometer"],
+    requiredCapabilities: ["movement", "ignition", "speed", "tripHistory"],
+    optionalCapabilities: ["odometer", "driverIdentification", "alarms"],
+    groupingOptions: ["vehicle", "day", "driver"],
+    defaultGrouping: "vehicle",
+    aggregationOptions: ["sum", "average", "max", "count"],
+    defaultAggregation: "sum",
+    availableColumns: ["vehicle", "time", "movement", "ignition", "speed", "tripOdometer", "totalOdometer"],
+    defaultColumnIds: ["vehicle", "time", "movement", "ignition", "speed", "tripOdometer"],
+    availableCharts: ["distance-by-day", "speed-profile", "trip-count"],
+    defaultChartIds: ["distance-by-day", "speed-profile"],
+    previewSections: ["summary", "charts", "table", "map"],
+    vehicleSelection: { mode: "all" },
+    period: { type: "preset", preset: "last7Days" },
+    timeWindow: { preset: "fullDay" },
+    schedule: { enabled: false, frequency: "daily" },
+  },
+  {
+    id: "canbus-details",
+    name: "CANBus Details",
+    category: "diagnostics",
+    description: "Future CANBus report. Disabled until selected vehicles expose CANBus attributes.",
+    supportedOutputModes: ["preview", "export"],
+    supportedExportFormats: ["xlsx", "json"],
+    defaultOutputMode: "preview",
+    parameterIds: [],
+    defaultParameterIds: [],
+    requiredCapabilities: ["canBus"],
+    groupingOptions: ["vehicle", "day"],
+    defaultGrouping: "vehicle",
+    aggregationOptions: ["average", "min", "max"],
+    defaultAggregation: "average",
+    availableColumns: ["vehicle", "time"],
+    defaultColumnIds: ["vehicle", "time"],
+    availableCharts: [],
+    defaultChartIds: [],
+    previewSections: ["summary", "table"],
+    vehicleSelection: { mode: "all" },
+    period: { type: "preset", preset: "today" },
+    timeWindow: { preset: "fullDay" },
+  },
+  {
+    id: "temperature",
+    name: "Temperature",
+    category: "diagnostics",
+    description: "Future temperature report. Disabled until temperature attributes are mapped.",
+    supportedOutputModes: ["preview", "export"],
+    supportedExportFormats: ["xlsx", "json"],
+    defaultOutputMode: "preview",
+    parameterIds: [],
+    defaultParameterIds: [],
+    requiredCapabilities: ["temperature"],
+    groupingOptions: ["vehicle", "day"],
+    defaultGrouping: "vehicle",
+    aggregationOptions: ["average", "min", "max"],
+    defaultAggregation: "average",
+    availableColumns: ["vehicle", "time"],
+    defaultColumnIds: ["vehicle", "time"],
+    availableCharts: [],
+    defaultChartIds: [],
+    previewSections: ["summary", "table"],
+    vehicleSelection: { mode: "all" },
+    period: { type: "preset", preset: "today" },
+    timeWindow: { preset: "fullDay" },
+  },
+];
+
+export const TEST_REPORT_PREVIEW_ROWS: ReportPreviewRow[] = [
+  {
+    vehicleId: "veh-atlas-12",
+    timestampIso: "2026-05-06T09:12:00Z",
+    values: {
+      speed: 52,
+      ignition: true,
+      movement: true,
+      fuelLevel: 68,
+      batteryLevel: 93,
+      externalVoltage: 12.184,
+      engineRpm: 1410,
+      gnssHdop: 0.8,
+      gsmSignal: 5,
+      totalOdometer: 182431000,
+      tripOdometer: 84200,
+      iButton: "0007104552",
+    },
+  },
+];

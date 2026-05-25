@@ -1,0 +1,74 @@
+import { Meta } from "@storybook/addon-docs/blocks";
+import { PlaybackExample } from "../examples/FleetsDocExamples";
+
+<Meta title="Features/Route Playback" />
+
+<div className="doc-hero">
+  <h1>Route Playback</h1>
+  <div className="doc-lead">
+    <span>Route Playback is the focused history view. It lets a developer or operator pick a vehicle/date range, load a route, inspect trip segments, scrub the timeline, and open segment graphs.</span>
+  </div>
+</div>
+
+## Entry points
+
+- route: `/playback`
+- page: `src/app/pages/RoutePlayback.tsx`
+- workspace hook: `src/app/features/playback/useRoutePlaybackWorkspace.ts`
+- query hook: `src/app/features/playback/usePlaybackQueries.ts`
+- shared playback components: `src/app/components/playback`
+
+## Data flow
+
+<div className="doc-flow" role="img" aria-label="Route playback flow">
+  <span>vehicle and date selection</span>
+  <span>playbackRepository</span>
+  <span>PlaybackRoute</span>
+  <span>CustomMap route layers</span>
+  <span>PlaybackTimelineDock and segment panels</span>
+</div>
+
+The page uses `playbackRepository` from the app service container. Real mode builds routes from OpenRemote datapoint history. Mock mode hydrates route fixtures and rebases dates so fixed demo data still works today.
+
+<PlaybackExample />
+
+## Route model
+
+`PlaybackRoute` is built from:
+
+- route points with GPS, timestamp, speed, direction, ignition, movement, trip, GSM, GNSS, HDOP, and satellite context
+- trip segments with duration, distance, stop count, max/average speed, state, markers, direction samples, telemetry samples, and graph series
+- segment markers for stops, idling, driver breaks, engine-off points, offline gaps, signal degradation, and alarms
+
+## Real mapper behavior
+
+`openRemotePlaybackMapper.ts` is the key file. It:
+
+- prefers `gpsLocation` history and falls back to `location`
+- carries nearby telemetry samples to route points
+- splits route lines around offline gaps, unless the vehicle is stationary at the same place
+- splits trips using Teltonika `trip` when available
+- falls back to movement evidence, displacement, ignition state, and stationary duration when `trip` is missing
+- creates graph series from route points plus nearby fuel telemetry
+
+## Shared playback UI
+
+Shared components live in `src/app/components/playback` because Live Fleet and Route Playback both use them:
+
+- `PlaybackTimelineDock`: play/pause, progress, speed, scrub, signal visibility, height reporting.
+- `TimelineSignalRows`: mini charts for line, state, and event signals.
+- `TimelineSignalSelector`: signal chips and single/multi mode.
+- `TripSegmentsPanel`: trip list with active state and graph action.
+- `SegmentGraphOverlay`: modal graph, signal rows, selector, and event list.
+- `usePlaybackController`: requestAnimationFrame-driven playback state machine.
+
+## States worth testing
+
+- no vehicle selected
+- no route for the selected date
+- loading route
+- route with alarm markers
+- route with offline gaps
+- timeline scrub pause/resume
+- segment graph open/close
+- stale request ignored after vehicle/date changes

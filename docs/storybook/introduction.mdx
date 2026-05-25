@@ -1,0 +1,49 @@
+import { Meta } from "@storybook/addon-docs/blocks";
+import { AppSurfaceExample, FeatureRouteExample } from "./examples/FleetsDocExamples";
+
+<Meta title="Introduction" />
+
+<div className="doc-hero">
+  <h1>OpenRemote Fleets</h1>
+  <div className="doc-lead">
+    <span>A standalone React frontend for fleet operations on top of OpenRemote Manager. The app is built around a live map, operational status, route playback, alerts, tracker assets, reports, and a wall display.</span>
+  </div>
+</div>
+
+<div className="doc-search-note">
+  <span>Use the Storybook sidebar search for terms like <code>mock</code>, <code>Teltonika</code>, <code>reports</code>, or <code>map</code>.</span>
+  <kbd className="doc-kbd">Ctrl</kbd>
+  <kbd className="doc-kbd">K</kbd>
+  <span>opens search. The toolbar switches the docs preview between Fleets light and dark tokens.</span>
+</div>
+
+## What this Storybook is for
+
+This Storybook is a developer handoff surface. It explains how the app is wired, where the main feature code lives, how data moves through real and mock mode, and which rules matter when continuing the project.
+
+It is not meant to replace the Markdown docs. Use it when you want a quick visual overview, a codebase map, or a reminder of how feature pieces fit together.
+
+<AppSurfaceExample />
+
+## Main routes
+
+The routes come from `src/app/appRoutes.ts`. Normal product pages render inside `Layout`; `Wall Display` is standalone because it is made for a TV-style operations screen.
+
+<FeatureRouteExample />
+
+## Reading order
+
+Start with these pages:
+
+1. `Architecture / Getting Started`
+2. `Architecture / App Shell`
+3. `Architecture / Real And Mock Data Modes`
+4. `Architecture / OpenRemote Services And Repositories`
+5. `Features / Live Fleet`
+6. `Data / Teltonika Telemetry And Status`
+7. `Data / Teltonika Emulator`
+8. `Maintenance / Verification Tests And Boundaries`
+
+## Boundary rule
+
+`openremote-manager/` is reference-only. Use it to understand Manager behavior or the Storybook style, but do not edit it. Fleets code lives in `src/`, `docs/`, root config, and environment examples.

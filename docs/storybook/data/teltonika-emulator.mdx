@@ -1,0 +1,221 @@
+import { Meta } from "@storybook/addon-docs/blocks";
+
+<Meta title="Data/Teltonika Emulator" />
+
+<div className="doc-hero">
+  <h1>Teltonika emulator</h1>
+  <div className="doc-lead">
+    <span>The emulator is a local Python app that sends emulated FMC003 tracker data into OpenRemote Manager, then Fleets reads that Manager data in real mode. It is the fastest way to test the real Teltonika path without hardware.</span>
+  </div>
+</div>
+
+## What it tests
+
+<div className="doc-flow" role="img" aria-label="Teltonika emulator data flow">
+  <span>Emulated FMC003 tracker</span>
+  <span>OpenRemote Teltonika TCP or MQTT</span>
+  <span>TeltonikaTrackerAsset attributes</span>
+  <span>Fleets real-mode repositories</span>
+  <span>Live Fleet, Assets, Playback, Reports</span>
+</div>
+
+Use mock mode for quick UI work. Use the emulator when you need Manager-created assets, real datapoint history, route playback from Manager, or real-mode fallback behavior.
+
+The emulator does not emit Fleets-only marker objects. Fleets still derives stop, idle, break, signal, engine-off, and offline markers from history.
+
+## Run it
+
+From Windows PowerShell:
+
+```powershell
+cd teltonika-emulator
+.\run.ps1
+```
+
+From macOS or Linux:
+
+```bash
+cd teltonika-emulator
+python3 run.py
+```
+
+The launcher creates `.venv`, installs dependencies when needed, starts FastAPI, opens the browser, and uses port `8090` or the next free port.
+
+Useful flags:
+
+```bash
+python run.py --no-open
+python run.py --no-autostart
+python run.py --port 8095
+python run.py --reinstall
+```
+
+If `config/emulator.local.yaml` is missing, the emulator starts from built-in demo trackers. Saving from the UI writes that ignored local config file.
+
+## Manager setup
+
+For the normal TCP path, start the local Teltonika-enabled Manager from the repository root:
+
+```powershell
+.\scripts\run-openremote-manager-local.ps1
+```
+
+Then check Manager:
+
+1. Manager is available at `https://localhost/manager`.
+2. A Teltonika agent exists.
+3. The agent transport is `TCP` or `BOTH`.
+4. The agent bind port is `5027`.
+5. The emulator config points to `127.0.0.1:5027`.
+6. One or more trackers are running from the emulator UI.
+7. Fleets is running in real mode with `npm run dev`.
+
+Manager should create one `TeltonikaTrackerAsset` for each emulator IMEI. Fleets real mode queries those assets through the normal OpenRemote repositories.
+
+## TCP and MQTT
+
+TCP is the main path. The emulator identifies with IMEI, waits for Manager's accept byte, sends Codec 8 AVL packets, and reads the accepted-record ACK.
+
+MQTT is a fallback. It publishes OpenRemote Teltonika JSON to:
+
+```text
+{realm}/{client_id}/teltonika/{imei}/data
+```
+
+MQTT sends raw Teltonika values. For example, `3.812 V` battery voltage becomes `3812`, and `0.8` HDOP becomes `8`.
+
+## Built-in demo trackers
+
+<table className="doc-table">
+  <thead>
+    <tr>
+      <th>Tracker</th>
+      <th>Route preset</th>
+      <th>Real-mode evidence</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>Atlas 12</td>
+      <td><code>atlas_eindhoven</code></td>
+      <td>Normal moving route with stop, idle, and engine-off telemetry.</td>
+    </tr>
+    <tr>
+      <td>Harbor 07</td>
+      <td><code>harbor_eindhoven</code></td>
+      <td>Omits <code>trip</code>, so fallback trip segmentation is exercised.</td>
+    </tr>
+    <tr>
+      <td>Delta 24</td>
+      <td><code>delta_eindhoven</code></td>
+      <td>Faster route with degraded GNSS/GSM while still moving.</td>
+    </tr>
+    <tr>
+      <td>Nimbus 03</td>
+      <td><code>nimbus_eindhoven</code></td>
+      <td>Early offline gap and later engine-off event.</td>
+    </tr>
+    <tr>
+      <td>Courier 19</td>
+      <td><code>courier_eindhoven</code></td>
+      <td>Delivery-style idle, driver break, and late offline gap.</td>
+    </tr>
+  </tbody>
+</table>
+
+Use **Deploy all presets** in the emulator UI for the full demo fleet. Existing presets are skipped so it does not duplicate local trackers.
+
+## Data contract
+
+The emulator emits the Fleets-supported Teltonika subset: position, heading, satellites, speed, ignition, movement, optional `trip`, GSM, GNSS, power, battery, odometer, fuel, sleep/data mode, engine RPM, and `iButton`.
+
+The same attribute names are documented in `src/domain/models/teltonikaCatalog.ts` and `docs/03-live-fleets/04-teltonika-openremote-data.md`.
+
+Keep these rules in place:
+
+- tracker identity is a 15-digit IMEI
+- `gpsLocation` is preferred, Manager `location` is still a valid fallback
+- missing telemetry stays missing
+- poor GNSS or GSM is degraded signal, not automatically offline
+- `iButton` is a device/driver identifier, not a human name
+- `driverName`, `plate`, and `assetClass` are optional Manager text attributes, not Codec 8 fields
+
+## Manager history sync
+
+Route playback and charts need Manager datapoint storage. The emulator can enable this automatically after Manager creates the tracker asset.
+
+It logs in to Manager, finds the `TeltonikaTrackerAsset` by IMEI, renames it to the emulator tracker name, and sets `storeDataPoints: true` on the useful telemetry attributes.
+
+Default local API settings:
+
+```yaml
+manager:
+  api:
+    enabled: true
+    base_url: https://localhost
+    realm: master
+    client_id: openremote
+    username: admin
+    password: secret
+    verify_tls: false
+    auto_store_datapoints: true
+```
+
+This only affects new datapoints. Manager cannot backfill history for packets that arrived before datapoint storage was enabled.
+
+## Code map
+
+<table className="doc-table">
+  <thead>
+    <tr>
+      <th>Area</th>
+      <th>Files</th>
+    </tr>
+  </thead>
+  <tbody>
+    <tr>
+      <td>FastAPI routes and UI shell</td>
+      <td><code>app/main.py</code>, <code>app/templates/index.html</code>, <code>app/static/</code></td>
+    </tr>
+    <tr>
+      <td>Config and defaults</td>
+      <td><code>app/models.py</code>, <code>app/config_store.py</code>, <code>app/defaults.py</code></td>
+    </tr>
+    <tr>
+      <td>Routes and scenarios</td>
+      <td><code>app/route_presets.py</code>, <code>app/simulator.py</code></td>
+    </tr>
+    <tr>
+      <td>Runtime lifecycle</td>
+      <td><code>app/service.py</code></td>
+    </tr>
+    <tr>
+      <td>OpenRemote sync</td>
+      <td><code>app/manager_api.py</code></td>
+    </tr>
+    <tr>
+      <td>Teltonika transports</td>
+      <td><code>app/teltonika/codec8.py</code>, <code>app/teltonika/client.py</code>, <code>app/teltonika/mqtt_payload.py</code></td>
+    </tr>
+    <tr>
+      <td>Launchers</td>
+      <td><code>run.py</code>, <code>run.ps1</code>, <code>run.bat</code>, <code>run.sh</code></td>
+    </tr>
+  </tbody>
+</table>
+
+## Verification
+
+Run emulator tests from `teltonika-emulator/`:
+
+```bash
+python -m pytest
+```
+
+The suite checks Codec 8 framing and CRC, TCP handshake, MQTT payload scaling, route simulation, Manager history setup, web API behavior, and alignment with Fleets mock fixture values.
+
+After Storybook docs changes, also run:
+
+```bash
+npm run build:storybook
+```

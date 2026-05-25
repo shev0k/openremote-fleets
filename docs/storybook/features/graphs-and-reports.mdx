@@ -1,0 +1,75 @@
+import { Meta } from "@storybook/addon-docs/blocks";
+
+<Meta title="Features/Graphs And Reports" />
+
+<div className="doc-hero">
+  <h1>Graphs and reports</h1>
+  <div className="doc-lead">
+    <span>Graphs is an operational dashboard. Reports is a definition-driven report builder. They both read normalized fleet data, but they solve different workflows.</span>
+  </div>
+</div>
+
+## Graphs
+
+- route: `/graphs`
+- page: `src/app/pages/Graphs.tsx`
+- controller: `src/app/features/graphs/useGraphsDashboardController.ts`
+- model: `src/app/features/graphs/graphsDashboardModel.ts`
+- widget registry: `src/app/features/graphs/components/graphWidgetRegistry.tsx`
+
+Graphs is a configurable dashboard with:
+
+- widget library
+- draggable/resizable grid
+- packed and free layout modes
+- date range controls
+- selected widget details
+- export dialog
+- print preview
+
+The dashboard model and registry are the important extension points. Add widget metadata, sizing, and renderer behavior there before wiring page controls around it.
+
+Useful component targets:
+
+- `GraphDashboardWidgets`
+- `GraphWidgetShell`
+- `GraphExportDialog`
+- `GraphPrintPreview`
+- widget primitives under `components/widgets`
+
+## Reports
+
+- route: `/reports`
+- page: `src/app/pages/Reports.tsx`
+- controller: `src/app/features/reports/useReportBuilderController.ts`
+- inputs: `src/app/features/reports/useReportInputs.ts`
+- validation: `src/app/features/reports/reportValidation.ts`
+- export service: `src/app/features/reports/reportExportService.ts`
+
+Reports is a builder. A report definition controls parameters, vehicle scope, time range, columns, charts, grouping, preview, export, email, print, and schedule behavior.
+
+The current real-mode report repository builds previews from current fleet assets. It is not a Manager report engine. Keep that distinction clear in docs and UI language.
+
+## Builder panels
+
+The page is easier to maintain as panels:
+
+- `ReportLibraryPanel`: report definitions and selection.
+- `ReportDefinitionSummaryPanel`: selected report metadata.
+- `ReportDatePeriodPanel` and `ReportTimeWindowPanel`: time range.
+- `ReportVehicleScopePanel`: vehicle scope.
+- `ReportParameterPanel`: definition-specific parameters.
+- `ReportOptionsPanel`: columns, charts, grouping, output options.
+- `ReportOutputPanel`: run/export/email/schedule actions.
+- `ReportPreview`: generated preview data.
+
+## Export behavior
+
+Reports include export helpers for CSV, JSON, XLSX-like table output, PDF-like output, and download wiring. Tests exist around the export services and preview formatting. When adding a format, update both the capability model and the service tests.
+
+## Maintenance notes
+
+- Keep report definitions and capabilities declarative.
+- Keep dashboard widget registration centralized.
+- Do not copy graph/report aggregation into page JSX.
+- Use tests for validation, export output, layout packing, and widget registry changes.

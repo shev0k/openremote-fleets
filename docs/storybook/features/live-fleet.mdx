@@ -1,0 +1,82 @@
+import { Meta } from "@storybook/addon-docs/blocks";
+import { AppSurfaceExample, LiveTelemetryExample, VehicleStatusBadgeExample } from "../examples/FleetsDocExamples";
+
+<Meta title="Features/Live Fleet" />
+
+<div className="doc-hero">
+  <h1>Live Fleet</h1>
+  <div className="doc-lead">
+    <span>Live Fleet is the main workspace. It is map-first, then adds fleet search, alerts, historical routes, selected vehicle context, playback, and pinned overlays around the map.</span>
+  </div>
+</div>
+
+## Entry points
+
+- route: `/`
+- page: `src/app/pages/LiveFleet.tsx`
+- shell: `src/app/features/live-fleet/components/LiveFleetPageShell.tsx`
+- provider: `src/app/features/live-fleet/providers/LiveFleetWorkspaceProvider.tsx`
+
+`LiveFleet.tsx` is intentionally thin. Most state is owned by `LiveFleetWorkspaceProvider`, which splits values into smaller contexts for data, selection, playback, preferences, and layout.
+
+## Workspace state
+
+<div className="doc-flow" role="img" aria-label="Live Fleet workspace state">
+  <span>repositories</span>
+  <span>useLiveFleetData</span>
+  <span>selection and route hooks</span>
+  <span>workspace contexts</span>
+  <span>map, sidebar, overlays, timeline</span>
+</div>
+
+Important provider hooks:
+
+- `useLiveFleetData` loads vehicles and handles route-backed simulation inputs.
+- `useLiveFleetSelection` owns selected vehicle, details, and selected-route loading.
+- `useLiveFleetRoutes` owns current route, historical route, active segment, graph overlay segment, and playback controller.
+- `useLiveFleetSimulation` moves mock vehicles along playback routes when mock mode supports it.
+- `useLiveFleetRealModeRefresh` refreshes real-mode fleet and route data while avoiding playback/scrub conflicts.
+- `useLiveFleetWidgetLayoutState` stores sidebar widget layout and visibility.
+- `useLiveFleetOverlayState` manages quick panels, active vehicle overlay, and pinned vehicle overlays.
+
+## Main UI pieces
+
+<AppSurfaceExample />
+
+The big pieces are:
+
+- `LiveMapCanvas`: shared `CustomMap`, map controls, playback route, active segment, and timeline placement.
+- `MapControlBar`: map type, zoom, reset, live tracking, simulation speed, and workspace toggle.
+- `LiveFleetSidebarWorkspace`: fleet list, alerts, historical status, trip history, and widget arrangement.
+- `LiveFleetOverlayLayer`: selected vehicle overlay, pinned overlays, graph overlay, and quick panels.
+- `VehicleDetailOverlay`: tracker identity, live telemetry, operational context, alerts, Street View fallback, and graph entry point.
+
+## Vehicle display status
+
+Display status and marker status are different on purpose.
+
+<VehicleStatusBadgeExample />
+
+Display badges come from `src/app/components/map/vehicleDisplayStatus.tsx`. They are used in lists, overlays, and compact summaries. Alerting wins when `status === "alerting"` or `activeAlertCount > 0`. Explicit offline stays offline. Idling, parked, and stationary stay distinct. Everything else becomes moving.
+
+Marker status comes from `src/app/components/map/vehicleMapMarkerStatus.ts`. It adds map-only states such as `driverBreak`, `signalDegraded`, and `stopped`. Signal degraded is based on GSM, GNSS status, HDOP, and satellite count.
+
+## Telemetry card
+
+`LiveTelemetryCard` reads the normalized vehicle/detail model and shows tracker identity plus primary and secondary live metrics. It does not talk to OpenRemote directly.
+
+<LiveTelemetryExample />
+
+## Real vs mock behavior
+
+In real mode, the workspace reads through repositories backed by OpenRemote services and mappers. Partial backend failures should return safe empty values instead of breaking the page.
+
+In mock mode, vehicles come from fixtures and `MockLiveFleetSimulationService` can animate vehicle positions from playback routes. Mock data should stay aligned with the Teltonika catalog so the UI is still a useful proxy for real tracker data.
+
+## Maintenance notes
+
+- Keep map helper code in `src/app/components/map` when it is shared by Live Fleet, Route Playback, or Wall Display.
+- Keep subscriptions, polling, intervals, and animation frames out of render-heavy components.
+- Guard async responses so a slow vehicle-detail request cannot overwrite a newer selected vehicle.
+- Keep route, timeline, selected segment, and map focus synchronized.
+- Add tests around state hooks, status rules, route behavior, and widget storage when changing workspace logic.

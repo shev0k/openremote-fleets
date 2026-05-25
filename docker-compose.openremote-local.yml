@@ -1,0 +1,11 @@
+services:
+  manager:
+    image: openremote/manager:teltonika-local
+    build:
+      context: ${OPENREMOTE_MANAGER_BUILD_CONTEXT:-./openremote-manager/manager/build/install/manager}
+      dockerfile: Dockerfile
+    ports:
+      - "${OPENREMOTE_TELTONIKA_PORT:-5027}:5027"
+    environment:
+      OR_DEV_MODE: "true"
+      OR_SETUP_RUN_ON_RESTART: "true"

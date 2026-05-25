@@ -1,0 +1,61 @@
+import { Meta } from "@storybook/addon-docs/blocks";
+import { ThemeTokenExample } from "../examples/FleetsDocExamples";
+
+<Meta title="Features/Preferences And Wall Display" />
+
+<div className="doc-hero">
+  <h1>Preferences and wall display</h1>
+  <div className="doc-lead">
+    <span>Preferences controls app-wide appearance and behavior. Wall Display consumes the same fleet data in a standalone, high-readability operations screen.</span>
+  </div>
+</div>
+
+## Preferences
+
+- route: `/preferences`
+- page: `src/app/pages/Preferences.tsx`
+- provider: `src/app/providers/AppPreferencesProvider.tsx`
+- domain model: `src/domain/models/preferences.ts`
+- storage helpers: `src/app/components/shared/storage/safeStorage.ts`
+
+Preferences currently cover:
+
+- brand name and source label
+- logo and favicon upload
+- brand, status, route, and map colors
+- light/dark and acrylic/solid behavior
+- default map layer
+- time format
+- live preview
+- save/reset/error states
+
+`buildPreferencesCssVariables` turns preferences into CSS variables. The provider also handles document title and favicon updates.
+
+<ThemeTokenExample />
+
+Real mode maps Manager realm appearance into app preferences through `OpenRemotePreferencesRepository` and `openRemotePreferencesMapper.ts`, then layers local overrides. Mock mode stores preferences locally with mock defaults.
+
+## Wall Display
+
+- route: `/wall-display`
+- page: `src/app/pages/WallDisplay.tsx`
+- timeline: `src/app/features/wall-display/WallDisplayTimeline.tsx`
+- telemetry bar: `src/app/features/wall-display/WallDisplayTelemetryBar.tsx`
+- view model: `src/app/features/wall-display/wallDisplayViewModel.ts`
+
+Wall Display bypasses the normal layout. It is meant for a large screen where operators glance at map, fleet status, current telemetry, and a scrolling operations timeline.
+
+Important states:
+
+- empty fleet
+- loading or syncing
+- demo telemetry fallback
+- hidden metric empty state
+- scale controls
+- draggable/auto-scrolling ticker
+- fullscreen controls
+- telemetry configure panel
+
+## Shared rule
+
+Preferences should change the whole app through tokens and provider state. Wall Display should consume those same app-level tokens rather than defining a separate visual system.

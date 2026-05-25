@@ -1,0 +1,104 @@
+manager:
+  tcp:
+    host: 127.0.0.1
+    port: 5027
+    tls: false
+  mqtt:
+    host: 127.0.0.1
+    port: 1883
+    tls: false
+    realm: master
+    client_id: fleet-emulator
+    username:
+    password:
+  api:
+    # Used by the emulator after the first successful tracker send to enable
+    # OpenRemote datapoint history for route playback and telemetry charts.
+    enabled: true
+    base_url: https://localhost
+    realm: master
+    client_id: openremote
+    username: admin
+    password: secret
+    verify_tls: false
+    auto_store_datapoints: true
+    data_points_max_age_days:
+    store_datapoint_attributes:
+      - gpsLocation
+      - location
+      - altitude
+      - direction
+      - satellites
+      - speed
+      - priority
+      - ignition
+      - movement
+      - gsmSignal
+      - externalVoltage
+      - batteryVoltage
+      - batteryCurrent
+      - batteryLevel
+      - gnssStatus
+      - gnssHdop
+      - totalOdometer
+      - tripOdometer
+      - fuelUsedGps
+      - fuelRateGps
+      - fuelLevel
+      - engineRpm
+      - iButton
+      - sleepMode
+      - dataMode
+      - eventTriggered
+trackers:
+  - imei: "352093086403655"
+    name: Atlas 12
+    enabled: false
+    transport: tcp
+    scenario: moving
+    # Built-in Eindhoven validation route presets:
+    # atlas_eindhoven, harbor_eindhoven, delta_eindhoven, nimbus_eindhoven, courier_eindhoven
+    # Presets own their dynamic road-speed profile and include stop, break,
+    # engine-off, temporary offline, and route-complete offline phases for Fleets real-mode checks.
+    route_preset: atlas_eindhoven
+    seed_state_from_config: true
+    route_progress: 0
+    # Optional Manager-side Fleets metadata. These create custom OpenRemote text
+    # attributes after the tracker asset exists; they are not sent through Codec 8 or MQTT.
+    # custom_attributes:
+    #   driver_name: Mila Janssen
+    #   plate: BR-482-K
+    #   asset_class: truck
+    # Optional custom YAML route override. If route is set, it wins over route_preset.
+    # route:
+    #   - [51.441642, 5.469722]
+    #   - [51.444403, 5.48277]
+    #   - [51.452078, 5.486248]
+    # Used by fixed latitude/longitude mode, the first seed snapshot, and custom YAML routes.
+    latitude: 51.458188
+    longitude: 5.493210
+    speed: 28
+    heading: 274
+    altitude: 18
+    satellites: 16
+    ignition: true
+    movement: true
+    gsm_signal: 5
+    external_voltage: 12.184
+    battery_voltage: 3.812
+    battery_current: 0.08
+    battery_level: 93
+    gnss_status: true
+    gnss_hdop: 0.8
+    total_odometer: 182431000
+    trip_odometer: 84200
+    fuel_used_gps: 31.4
+    fuel_rate_gps: 28.4
+    fuel_level: 68
+    sleep_mode: 0
+    data_mode: 1
+    engine_rpm: 1240
+    i_button: "0007104552"
+    update_interval: 5
+    event_id: 24
+    priority: 0
